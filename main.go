@@ -76,7 +76,7 @@ func main() {
 					return
 				}
 
-				log.Info().Msgf("writing %d bytes to %s", len(bytes), addr.String())
+				log.Debug().Msgf("writing %d bytes to %s", len(bytes), addr.String())
 
 				if _, err := conn.WriteTo(bytes, addr); err != nil {
 					if errors.Is(err, net.ErrClosed) {
@@ -96,7 +96,7 @@ func main() {
 		for {
 			bytes := <-writeToVNNetChan
 
-			log.Info().Msgf("writing %d bytes to vmnet", len(bytes))
+			log.Debug().Msgf("writing %d bytes to vmnet", len(bytes))
 
 			if _, err := vmn.Write(bytes); err != nil {
 				log.Error().Msgf("error while writing to vmnet: %s", err.Error())
