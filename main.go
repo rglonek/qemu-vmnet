@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/adnsio/qemu-vmnet/pkg/vmnet"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/rglonek/qemu-vmnet/pkg/vmnet"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

@@ -4,8 +4,10 @@ package vmnet
 // #cgo LDFLAGS: -lobjc -framework vmnet
 // #include "vmnet.h"
 import "C"
+
 import (
 	"io"
+	"sync"
 	"unsafe"
 )
 
@@ -40,7 +42,8 @@ func (v *VMNet) Read(p []byte) (n int, err error) {
 
 		C._vmnet_read(v.iface, v.mps, &cBytes, &cBytesLen)
 
-		if cBytes == nil {
+		if cBytes == nil || int(cBytesLen) == 0 {
+			waitForEvent()
 			continue
 		}
 
@@ -56,4 +59,30 @@ func (v *VMNet) Write(p []byte) (n int, err error) {
 
 func New() *VMNet {
 	return &VMNet{}
+}
+
+type EventType uint32
+
+const (
+	packetsAvailableEvent EventType = 1 << 0
+)
+
+var eventQueue = make(chan bool, 1)
+var eventQueueLock = new(sync.Mutex)
+
+func waitForEvent() {
+	<-eventQueue
+}
+
+//export emitEvent
+func emitEvent(eventType uint32, nPktAvail uint64) {
+	etype := EventType(eventType)
+	switch etype {
+	case packetsAvailableEvent:
+		eventQueueLock.Lock()
+		if len(eventQueue) == 0 {
+			eventQueue <- true
+		}
+		eventQueueLock.Unlock()
+	}
 }

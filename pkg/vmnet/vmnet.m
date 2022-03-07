@@ -37,12 +37,24 @@ void _vmnet_start(interface_ref *interface, uint64_t *max_packet_size) {
 
   *interface = _interface;
   *max_packet_size = _max_packet_size;
+
+  dispatch_queue_t if_q = dispatch_queue_create("org.np.vmnet.events", 0);
+
+  vmnet_interface_set_event_callback(_interface, VMNET_INTERFACE_PACKETS_AVAILABLE,
+		if_q, ^(interface_event_t event_id, xpc_object_t event) 
+		{
+			unsigned int navail = xpc_dictionary_get_uint64(event, vmnet_estimated_packets_available_key);
+			emitEvent(event_id, navail);
+		}
+	);
 }
 
 void _vmnet_stop(interface_ref interface) {
   if (interface == NULL) {
     return;
   }
+
+  vmnet_interface_set_event_callback(interface, VMNET_INTERFACE_PACKETS_AVAILABLE, NULL, NULL);
 
   dispatch_queue_t interface_stop_queue =
       dispatch_queue_create("vmnet-stop", DISPATCH_QUEUE_SERIAL);

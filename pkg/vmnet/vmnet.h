@@ -9,5 +9,5 @@ void _vmnet_stop(interface_ref interface);
 void _vmnet_write(interface_ref interface, void *bytes, size_t bytes_size);
 void _vmnet_read(interface_ref interface, uint64_t max_packet_size,
                  void **bytes, size_t *bytes_size);
-
+extern void emitEvent(uint32_t eventType, uint64_t packetCount);
 #endif /* vmnet_h */
