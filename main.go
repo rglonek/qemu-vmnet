@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/google/gopacket"
@@ -47,7 +48,9 @@ func main() {
 
 	writeToVNNetChan := make(chan []byte)
 	clients := map[string]net.Addr{}
+	clientsLock := new(sync.Mutex)
 	clientsIp := make(map[string]string)
+	clientsIpLock := new(sync.Mutex)
 
 	go func() {
 		for {
@@ -133,20 +136,24 @@ func main() {
 				if layer := pkt.Layer(layers.LayerTypeEthernet); layer != nil {
 					eth, _ := layer.(*layers.Ethernet)
 
+					clientsLock.Lock()
 					_, exist := clients[eth.SrcMAC.String()]
 					if !exist {
 						clients[eth.SrcMAC.String()] = addr
 						log.Info().Msgf("new client with mac %s", eth.SrcMAC.String())
 					}
+					clientsLock.Unlock()
 					if iplayer := pkt.Layer(layers.LayerTypeIPv4); iplayer != nil {
 						nIp, _ := iplayer.(*layers.IPv4)
 						srcIp := nIp.SrcIP.String()
 						if srcIp != "0.0.0.0" {
+							clientsIpLock.Lock()
 							_, exist := clientsIp[srcIp]
 							if !exist {
 								clientsIp[srcIp] = eth.SrcMAC.String()
 								log.Info().Msgf("client mac %s has ip %s", eth.SrcMAC.String(), srcIp)
 							}
+							clientsIpLock.Unlock()
 						}
 					}
 
