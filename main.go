@@ -47,6 +47,7 @@ func main() {
 
 	writeToVNNetChan := make(chan []byte)
 	clients := map[string]net.Addr{}
+	clientsIp := make(map[string]string)
 
 	go func() {
 		for {
@@ -82,6 +83,11 @@ func main() {
 					if errors.Is(err, net.ErrClosed) {
 						delete(clients, destinationMAC)
 						log.Info().Msgf("deleted client with mac %s", destinationMAC)
+						for srcip := range clientsIp {
+							if clientsIp[srcip] == destinationMAC {
+								delete(clientsIp, srcip)
+							}
+						}
 						return
 					}
 
@@ -131,6 +137,17 @@ func main() {
 					if !exist {
 						clients[eth.SrcMAC.String()] = addr
 						log.Info().Msgf("new client with mac %s", eth.SrcMAC.String())
+					}
+					if iplayer := pkt.Layer(layers.LayerTypeIPv4); iplayer != nil {
+						nIp, _ := iplayer.(*layers.IPv4)
+						srcIp := nIp.SrcIP.String()
+						if srcIp != "0.0.0.0" {
+							_, exist := clientsIp[srcIp]
+							if !exist {
+								clientsIp[srcIp] = eth.SrcMAC.String()
+								log.Info().Msgf("client mac %s has ip %s", eth.SrcMAC.String(), srcIp)
+							}
+						}
 					}
 
 					writeToVNNetChan <- bytes
